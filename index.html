@@ -101,12 +101,12 @@
             padding-top: 8px;
             display: flex;
             flex-direction: column;
-            gap: 22px;
+            gap: 56px;
         }
         .slider-row {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 24px;
             font-size: 1rem;
             text-transform: uppercase;
         }
@@ -117,7 +117,7 @@
             -webkit-appearance: none;
             appearance: none;
             background: var(--text-dim);
-            border-radius: 28px;
+            border-radius: k34px;
             cursor: pointer;
         }
         .slider-row input[type="range"]::-webkit-slider-thumb {
@@ -274,7 +274,7 @@
             <div class="slider-group">
                 <div class="slider-row">
                     <label>SPEED</label>
-                    <input type="range" id="speed-slider" min=".01" max="2" value="1" step=".05">
+                    <input type="range" id="speed-slider" min=".01" max="5" value="1" step=".05">
                     <span id="speed-val">5x</span>
                 </div>
                 <div class="slider-row">
@@ -304,7 +304,7 @@
 
         <div class="vertical-slider-container">
             <span class="vert-label-top">▲ TOP</span>
-            <input type="range" id="time-slider" orient="vertical" min="0.01" max="2" value="1" step=".02">
+            <input type="range" id="time-slider" orient="vertical" min="0.001" max="5" value="1" step=".005">
             <span class="vert-label-bot">BOT ▼</span>
             <span style="font-size:0.7rem;color:var(--text-dim);">SCAN<br>POS</span>
         </div>
