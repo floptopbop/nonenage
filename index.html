@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Pandra_OS // Shard Recon + Skeleton + Prongs</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js">
-    </script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         :root {
-            --bg: #090a0f;
-            --panel-bg: #111218;
-            --text-main: #a9ffb4;
-            --text-dim: #2e4c34;
+            --bg: #0b0c12;
+            --panel-bg: #12141e;
+            --text-main: #c3ffb0;
+            --text-dim: #3e5a42;
             --accent-1: #00e5ff;
             --accent-2: #ff00ea;
             --accent-3: #ffe600;
@@ -27,117 +26,231 @@
             font-family: 'Courier New', 'IBM VGA', monospace;
             overflow: hidden;
             height: 100vh;
+            width: 100vw;
             display: flex;
             flex-direction: column;
-            font-size: 1rem;
+            font-size: 16px;
+            letter-spacing: 0.02em;
         }
-        #visual-plane {
-            height: 85vh;
-            position: relative;
-            background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-        canvas {
-            max-width: 100%;
-            max-height: 100%;
-            position: absolute;
-            center: 0;
-            center: 0;
-            image-rendering: crisp-edges;
-        }
-        #recon-canvas { z-index: 1; }
-        #skeleton-canvas { z-index: 2; pointer-events: none; }
-        #bottom-panel {
-            height: 35vh;
-            border-top: 2px solid var(--text-main);
-            background: var(--panel-bg);
+#visual-plane {
+    position: relative;
+
+    flex: 1 1 auto;
+    min-height: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background: #000;
+
+    overflow: hidden;
+
+    display: block; /* important: removes flex weird centering conflicts */
+}
+
+/* CANVAS BASE LAYER */
+#visual-plane canvas {
+    position: absolute;
+
+    inset: 0;              /* replaces top/left/transform chaos */
+    width: 100%;
+    height: 100%;
+
+    display: block;
+}
+
+/* STACK ORDER */
+#recon-canvas {
+    z-index: 1;
+}
+
+#skeleton-canvas {
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* HUD (fixed overlay, NOT layout-dependent) */
+#hud {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+
+    z-index: 10;
+
+    background: rgba(8, 10, 15, 0.9);
+    border: 1px solid var(--text-main);
+
+    padding: 10px 14px;
+
+    min-width: 130px;
+
+    font-size: 1.2rem;
+
+    backdrop-filter: blur(8px);
+}
+
+/* SCANLINE */
+#scanner {
+    position: absolute;
+    left: 0;
+    top: 0;
+
+    width: 100%;
+    height: 2px;
+
+    z-index: 5;
+
+    background: var(--accent-1);
+    box-shadow: 0 0 20px var(--accent-1);
+
+    pointer-events: none;
+    display: none;
+}        #bottom-panel {
+            height: 25vh;
+            min-height: 320px;
+            padding-bottom: env(safe-area-inset-bottom, 8px);
+            flex-shrink: 0;
+            background: rgba(18, 20, 30, 0.97);
+            backdrop-filter: blur(12px);
             display: flex;
             z-index: 20;
+            width: 100%;
+            border-top: 2px solid var(--text-main);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.6);
         }
         .controls {
-            width: 540px;
-            padding: 8px 10px;
+            flex: 2.5;
+            padding: 20px 24px;
             border-right: 1px solid var(--text-dim);
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            background: rgba(0, 0, 0, 0.2);
+            gap: 16px;
+            background: rgba(0, 0, 0, 0.25);
+            overflow-y: auto;
+            min-width: 320px;
             flex-shrink: 0;
         }
-        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
         input[type="file"] { display: none; }
         .btn {
-            background: transparent;
+            background: rgba(0, 0, 0, 0.65);
             color: var(--text-main);
             border: 1px solid var(--text-main);
-            padding: 10px 10px;
+            padding: 10px 16px;
             cursor: pointer;
             font-family: inherit;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: 0.2s;
-            background: rgba(0, 0, 0, 0.3);
-            font-size: 1rem;
+            letter-spacing: 1.5px;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
             white-space: nowrap;
+            flex-shrink: 0;
+            line-height: 1.2;
+            border-radius: 2px;
+            box-shadow: 0 0 12px rgba(169, 255, 180, 0.15);
         }
         .btn:hover {
             background: var(--text-main);
-            color: var(--bg);
-            box-shadow: 0 0 18px rgba(169, 255, 180, 0.7);
+            color: #0b0c12;
+            box-shadow: 0 0 24px rgba(195, 255, 176, 0.7);
+            border-color: #fff;
         }
-        .btn-active { border-color: var(--accent-1); color: var(--accent-1); }
+        .btn:active {
+            transform: scale(0.97);
+        }
         #start-btn:disabled {
-            opacity: 0.4;
+            opacity: 0.35;
             cursor: not-allowed;
             border-color: var(--text-dim);
             color: var(--text-dim);
+            box-shadow: none;
         }
         .slider-group {
-            border-top: 8px solid var(--text-dim);
-            padding-top: 8px;
+            border-top: 1px solid var(--text-dim);
+            padding-top: 16px;
             display: flex;
             flex-direction: column;
-            gap: 22px;
+            gap: 14px;
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
         }
         .slider-row {
             display: flex;
             align-items: center;
             gap: 14px;
-            font-size: 1rem;
             text-transform: uppercase;
+            padding: 8px 0;
+            flex-shrink: 0;
         }
-        .slider-row label { width: 140px; color: var(--text-main); font-weight: bold; font-size: 1.6rem; }
+        .slider-row label {
+            width: 48px;
+            color: var(--text-main);
+            font-weight: bold;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            opacity: 0.9;
+            text-shadow: 0 0 8px rgba(195, 255, 176, 0.6);
+            flex-shrink: 0;
+        }
         .slider-row input[type="range"] {
             flex: 1;
-            height: 4px;
+            height: 6px;
             -webkit-appearance: none;
             appearance: none;
-            background: var(--text-dim);
-            border-radius: 28px;
+            background: rgba(195, 255, 176, 0.15);
+            border-radius: 4px;
             cursor: pointer;
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.5);
+            transition: all 0.1s ease;
+            min-width: 70px;
+        }
+        .slider-row input[type="range"]:hover {
+            background: rgba(195, 255, 176, 0.25);
         }
         .slider-row input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 24px;
+            width: 20px;
             height: 24px;
-            border-radius: 50%;
-            background: var(--accent-1);
-            border: 16px solid var(--text-main);
+            border-radius: 3px;
+            background: var(--text-main);
+            border: 2px solid #000;
+            cursor: pointer;
+            box-shadow: 0 0 16px var(--text-main), 0 0 8px rgba(195, 255, 176, 0.7);
+            transition: all 0.1s ease;
+        }
+        .slider-row input[type="range"]::-webkit-slider-thumb:hover {
+            width: 22px;
+            height: 26px;
+            box-shadow: 0 0 28px var(--text-main), 0 0 14px rgba(195, 255, 176, 1);
+        }
+        .slider-row input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 24px;
+            border-radius: 3px;
+            background: var(--text-main);
+            border: 2px solid #000;
+            box-shadow: 0 0 18px var(--text-main);
             cursor: pointer;
         }
         .slider-row span {
-            width: 42px;
+            width: 52px;
             text-align: right;
-            color: #fff;
+            color: var(--accent-1);
             font-weight: bold;
-            font-size: 1.2rem;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px var(--accent-1);
+            flex-shrink: 0;
         }
         .vertical-slider-container {
-            width: 55px;
+            width: 56px;
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
@@ -145,86 +258,115 @@
             justify-content: center;
             border-left: 1px solid var(--text-dim);
             border-right: 1px solid var(--text-dim);
-            background: rgba(0, 0, 0, 0.25);
-            padding: 6px 4px;
-            gap: 16px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 16px 8px;
+            gap: 12px;
+            min-width: 56px;
         }
         .vert-label-top, .vert-label-bot {
-            font-size: 1rem;
+            font-size: 1.2rem;
             color: var(--accent-1);
             font-weight: bold;
             letter-spacing: 1px;
             text-shadow: 0 0 6px var(--accent-1);
+            white-space: nowrap;
+            text-align: center;
         }
         #time-slider {
             -webkit-appearance: slider-vertical;
             appearance: slider-vertical;
-            width: 22px;
+            width: 26px;
             flex: 1;
-            min-height: 60px;
+            min-height: 80px;
             background: transparent;
             cursor: pointer;
             accent-color: var(--accent-1);
             border: none;
             outline: none;
+            writing-mode: bt-lr;
+            direction: rtl;
         }
         #time-slider::-webkit-slider-runnable-track {
-            background: #1a2b1d;
-            border-radius: 3px;
-            width: 4px;
-            box-shadow: inset 0 0 6px rgba(0,0,0,0.6);
+            background: #1c2b1e;
+            border-radius: 4px;
+            width: 6px;
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.8);
         }
         #time-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 18px;
             background: var(--accent-1);
-            border: 2px solid var(--text-main);
+            border: 2px solid #000;
             border-radius: 3px;
             box-shadow: 0 0 14px var(--accent-1);
             margin-left: -8px;
         }
+        .vert-time-label {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            text-align: center;
+            white-space: nowrap;
+        }
         .plots-wrapper {
-            flex: 1;
+            flex: 1.5;
             display: flex;
             flex-direction: column;
             gap: 2px;
-            background: #0a0b10;
+            background: #080a0f;
             overflow: hidden;
             min-width: 0;
         }
-        .plot-pane { flex: 1; position: relative; overflow: hidden; min-height: 0; }
-        .plot-pane:first-child { border-bottom: 1px solid var(--text-dim); }
+        .plot-pane {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            min-height: 100px; /* ensures plots have room to render */
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(195, 255, 176, 0.1);
+        }
+        .plot-pane:first-child {
+            border-bottom: 1px solid var(--text-dim);
+        }
         #hud {
             position: absolute;
-            top: 5px;
-            right: 5px;
-            background: rgba(9, 10, 15, 0.88);
+            top: 12px;
+            right: 12px;
+            background: rgba(8, 10, 15, 0.9);
             border: 1px solid var(--text-main);
-            padding: 12px 14px;
+            padding: 10px 14px;
             z-index: 10;
-            backdrop-filter: blur(5px);
-            min-width: 180px;
+            backdrop-filter: blur(8px);
+            min-width: 130px;
             pointer-events: none;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border-radius: 2px;
         }
         .hud-title {
             border-bottom: 1px dashed var(--text-main);
             margin-bottom: 8px;
             padding-bottom: 4px;
             font-weight: bold;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
             color: var(--accent-1);
-            text-shadow: 0 0 8px var(--accent-1);
+            text-shadow: 0 0 10px var(--accent-1);
             font-size: 0.9rem;
         }
         .metric {
-            margin-bottom: 4px;
+            margin-bottom: 5px;
             display: flex;
             justify-content: space-between;
-            font-size: 1rem;
-            gap: 8px;
+            font-size: 0.65rem;
+            gap: 10px;
+            letter-spacing: 0.5px;
         }
-        .val { font-weight: bold; color: #fff; }
+        .val {
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 6px rgba(255,255,255,0.6);
+        }
         .lbl-v1 { color: var(--accent-1); }
         .lbl-v2 { color: var(--accent-2); }
         .lbl-v3 { color: var(--accent-3); }
@@ -234,10 +376,31 @@
             width: 100%;
             height: 2px;
             background: var(--accent-1);
-            box-shadow: 0 0 20px var(--accent-1), 0 0 40px rgba(0,229,255,0.4);
+            box-shadow: 0 0 20px var(--accent-1), 0 0 40px rgba(0,229,255,0.5);
             display: none;
             z-index: 5;
             pointer-events: none;
+        }
+
+        @media (max-height: 700px) {
+            #bottom-panel { height: 38vh; min-height: 280px; }
+            .controls { padding: 14px 16px; gap: 12px; }
+            .btn { padding: 8px 12px; font-size: 0.8rem; }
+            .slider-row label { font-size: 0.75rem; width: 44px; }
+            .slider-row span { font-size: 0.75rem; width: 44px; }
+            .slider-group { gap: 10px; padding-top: 12px; }
+            .vertical-slider-container { width: 48px; padding: 10px 4px; gap: 8px; }
+            #time-slider { width: 22px; min-height: 60px; }
+        }
+        @media (max-height: 500px) {
+            #bottom-panel { height: 42vh; min-height: 220px; }
+            .controls { padding: 8px 10px; gap: 6px; }
+            .btn { padding: 6px 10px; font-size: 1.2rem; }
+            .slider-row label { font-size: 0.65rem; width: 36px; }
+            .slider-row span { font-size: 0.65rem; width: 36px; }
+            .slider-group { gap: 6px; padding-top: 8px; }
+            .vertical-slider-container { width: 40px; padding: 6px 2px; gap: 5px; }
+            #time-slider { width: 18px; min-height: 40px; }
         }
     </style>
 </head>
@@ -257,7 +420,6 @@
         </div>
         <div id="scanner" class="scanline"></div>
     </div>
-     </div>
 
     <div id="bottom-panel">
         <div class="controls">
@@ -265,21 +427,22 @@
                 <button class="btn" id="upload-btn">LOAD IMAGE</button>
                 <input type="file" id="file-in" accept="image/*">
                 <button class="btn" id="start-btn" disabled>EXTRACT BONES</button>
+                <button class="btn" id="save-btn">SAVE IMAGE</button>
             </div>
             <div class="btn-row">
                 <button class="btn" id="recon-btn">SHARD RECON</button>
                 <button class="btn" id="decay-btn">OMNI DECAY</button>
-                <button class="btn" id="reset-btn">RESET</button>
+                <button class="btn" id="reset-btn">CRITICAL RESET</button>
             </div>
             <div class="slider-group">
                 <div class="slider-row">
-                    <label>SPEED</label>
-                    <input type="range" id="speed-slider" min=".01" max="2" value="1" step=".05">
-                    <span id="speed-val">5x</span>
+                    <label>SPD</label>
+                    <input type="range" id="speed-slider" min="0.001" max="3" value="1" step="0.001">
+                    <span id="speed-val">1x</span>
                 </div>
                 <div class="slider-row">
-                    <label>EDGE THR</label>
-                    <input type="range" id="edge-threshold" min="10" max="200" value="60" step="1">
+                    <label>EDG</label>
+                    <input type="range" id="edge-threshold" min="1" max="300" value="60" step="1">
                     <span id="edge-val">60</span>
                 </div>
                 <div class="slider-row">
@@ -288,25 +451,23 @@
                     <span id="hue-val">0°</span>
                 </div>
                 <div class="slider-row">
-                    <label>SATURATION</label>
+                    <label>SAT</label>
                     <input type="range" id="sat-slider" min="0" max="3" value="1.5" step="0.1">
                     <span id="sat-val">1.5</span>
                 </div>
                 <div class="slider-row">
-                    <label>CONTRAST</label>
-                    <input type="range" id="con-slider" min="0.5" max="2.5" value="1.2" step="0.1">
-                    <span id="con-val">1.2</span>
-        </span>
-        </span>
+                    <label>CON</label>
+                    <input type="range" id="con-slider" min="0.01" max="1" value="0.5" step="0.02">
+                    <span id="con-val">0.50</span>
                 </div>
             </div>
         </div>
 
         <div class="vertical-slider-container">
             <span class="vert-label-top">▲ TOP</span>
-            <input type="range" id="time-slider" orient="vertical" min="0.01" max="2" value="1" step=".02">
+            <input type="range" id="time-slider" orient="vertical" min="0" max="100" value="0" step="1">
+            <span class="vert-time-label">SCAN<br>POS</span>
             <span class="vert-label-bot">BOT ▼</span>
-            <span style="font-size:0.7rem;color:var(--text-dim);">SCAN<br>POS</span>
         </div>
 
         <div class="plots-wrapper">
@@ -324,30 +485,39 @@
             const skeletonCanvas = document.getElementById('skeleton-canvas');
             const skeletonCtx = skeletonCanvas.getContext('2d');
             const scanner = document.getElementById('scanner');
+            const visualPlane = document.getElementById('visual-plane');
 
             let originalImageData = null;
             let baseImageData = null;
             let grayData = null;
             let skeletonOutData = null;
-            let canvasWidth = 0, canvasHeight = 0;
+            let canvasWidth = 0,
+                canvasHeight = 0;
 
-            let isScanning = false, currentRow = 0, totalNodes = 0, totalPixels = 0;
-            let plotRows = [], plotDensity = [];
+            let isScanning = false,
+                currentRow = 0,
+                totalNodes = 0,
+                totalPixels = 0;
+            let plotRows = [],
+                plotDensity = [];
             let displayRow = 0;
             let manualRowFraction = null;
 
-            let prongTime = 0, lastCentroid = { x: 0, y: 0 };
+            let prongTime = 0,
+                lastCentroid = { x: 0, y: 0 };
             const MAX_3D_POINTS = 50;
             let prongTraces = {
-                x1:[], y1:[], z1:[],
-                x2:[], y2:[], z2:[],
-                x3:[], y3:[], z3:[]
+                x1: [], y1: [], z1: [],
+                x2: [], y2: [], z2: [],
+                x3: [], y3: [], z3: []
             };
-            let smoothMassRatio = 0, smoothRowFraction = 0;
+            let smoothMassRatio = 0,
+                smoothRowFraction = 0;
 
             const fileIn = document.getElementById('file-in');
             const uploadBtn = document.getElementById('upload-btn');
             const startBtn = document.getElementById('start-btn');
+            const saveBtn = document.getElementById('save-btn');
             const reconBtn = document.getElementById('recon-btn');
             const decayBtn = document.getElementById('decay-btn');
             const resetBtn = document.getElementById('reset-btn');
@@ -359,110 +529,119 @@
             const speedSlider = document.getElementById('speed-slider');
             const speedValSpan = document.getElementById('speed-val');
 
-            let speedMultiplier = 5;
+            let speedMultiplier = 1;
 
-            // Initialize plots
-            Plotly.newPlot('density-plot', [{
-                x:[], y:[],
-                type:'scatter', mode:'lines',
-                line:{color:'#00e5ff',width:2},
-                fill:'tozeroy', fillcolor:'rgba(0,229,255,0.08)'
-            }], {
-                paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
-                margin:{l:35,r:10,b:25,t:15},
-                xaxis:{title:'ROW',color:'#2e4c34',gridcolor:'#1a2b1d',zeroline:false},
-                yaxis:{title:'DENSITY',color:'#2e4c34',gridcolor:'#1a2b1d',zeroline:false},
-                font:{family:'Courier New',color:'#a9ffb4',size:10},
-                showlegend:false
-            }, {responsive:true});
+            // Initialize plots after a tiny delay to ensure containers have dimensions
+            function initPlots() {
+                Plotly.newPlot('density-plot', [{
+                    x: [], y: [],
+                    type: 'scatter', mode: 'lines',
+                    line: { color: '#00e5ff', width: 2 },
+                    fill: 'tozeroy', fillcolor: 'rgba(0,229,255,0.08)'
+                }], {
+                    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+                    margin: { l: 35, r: 8, b: 25, t: 15 },
+                    xaxis: { title: 'ROW', color: '#3e5a42', gridcolor: '#1c2b1e', zeroline: false },
+                    yaxis: { title: 'DENSITY', color: '#3e5a42', gridcolor: '#1c2b1e', zeroline: false },
+                    font: { family: 'Courier New', color: '#c3ffb0', size: 10 },
+                    showlegend: false
+                }, { responsive: true });
 
-            Plotly.newPlot('prong-plot', [], {
-                paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
-                margin:{l:0,r:0,b:0,t:0},
-                scene:{
-                    xaxis:{visible:false,range:[-1.2,1.2]},
-                    yaxis:{visible:false,range:[-1.2,1.2]},
-                    zaxis:{visible:false,range:[-1.2,1.2]},
-                    camera:{eye:{x:1.2,y:1.2,z:0.8}}
-                },
-                showlegend:false
-            }, {responsive:true});
+                Plotly.newPlot('prong-plot', [], {
+                    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+                    margin: { l: 0, r: 0, b: 0, t: 0 },
+                    scene: {
+                        xaxis: { visible: false, range: [-1.2, 1.2] },
+                        yaxis: { visible: false, range: [-1.2, 1.2] },
+                        zaxis: { visible: false, range: [-1.2, 1.2] },
+                        camera: { eye: { x: 1.2, y: 1.2, z: 0.8 } }
+                    },
+                    showlegend: false
+                }, { responsive: true });
+            }
+
+            // Wait for layout to be ready, then init
+            if (document.readyState === 'complete') {
+                setTimeout(initPlots, 50);
+            } else {
+                window.addEventListener('load', () => setTimeout(initPlots, 50));
+            }
 
             // Color utilities
             function rgbToHsl(r, g, b) {
-                r/=255; g/=255; b/=255;
-                const max=Math.max(r,g,b), min=Math.min(r,g,b);
-                let h, s, l=(max+min)/2;
-                if(max===min){h=s=0;}else{
-                    const d=max-min;
-                    s=l>0.5?d/(2-max-min):d/(max+min);
-                    switch(max){
-                        case r: h=((g-b)/d+(g<b?6:0))/6; break;
-                        case g: h=((b-r)/d+2)/6; break;
-                        case b: h=((r-g)/d+4)/6; break;
+                r /= 255; g /= 255; b /= 255;
+                const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                let h, s, l = (max + min) / 2;
+                if (max === min) { h = s = 0; } else {
+                    const d = max - min;
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                    switch (max) {
+                        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                        case g: h = ((b - r) / d + 2) / 6; break;
+                        case b: h = ((r - g) / d + 4) / 6; break;
                     }
                 }
-                return [h*360, s, l];
-            }
-            function hslToRgb(h,s,l){
-                h/=360;
-                let r,g,b;
-                if(s===0){r=g=b=l;}else{
-                    const hue2rgb=(p,q,t)=>{
-                        if(t<0)t+=1;if(t>1)t-=1;
-                        if(t<1/6)return p+(q-p)*6*t;
-                        if(t<1/2)return q;
-                        if(t<2/3)return p+(q-p)*(2/3-t)*6;
-                        return p;
-                    };
-                    const q=l<0.5?l*(1+s):l+s-l*s, p=2*l-q;
-                    r=hue2rgb(p,q,h+1/3);
-                    g=hue2rgb(p,q,h);
-                    b=hue2rgb(p,q,h-1/3);
-                }
-                return [Math.round(r*255),Math.round(g*255),Math.round(b*255)];
-            }
-            function modifyColor(r,g,b, hueShift, satMult, contrast){
-                let [h,s,l]=rgbToHsl(r,g,b);
-                h=(h+hueShift)%360; if(h<0)h+=360;
-                s=Math.min(1,Math.max(0,s*satMult));
-                l=0.5+(l-0.5)*contrast;
-                l=Math.min(1,Math.max(0,l));
-                return hslToRgb(h,s,l);
+                return [h * 360, s, l];
             }
 
-            // Live colors from current slider positions
-            function getLiveSkeletonColors(){
+            function hslToRgb(h, s, l) {
+                h /= 360;
+                let r, g, b;
+                if (s === 0) { r = g = b = l; } else {
+                    const hue2rgb = (p, q, t) => {
+                        if (t < 0) t += 1;
+                        if (t > 1) t -= 1;
+                        if (t < 1/6) return p + (q - p) * 6 * t;
+                        if (t < 1/2) return q;
+                        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                        return p;
+                    };
+                    const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+                    r = hue2rgb(p, q, h + 1/3);
+                    g = hue2rgb(p, q, h);
+                    b = hue2rgb(p, q, h - 1/3);
+                }
+                return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+            }
+
+            function modifyColor(r, g, b, hueShift, satMult, contrast) {
+                let [h, s, l] = rgbToHsl(r, g, b);
+                h = (h + hueShift) % 360; if (h < 0) h += 360;
+                s = Math.min(1, Math.max(0, s * satMult));
+                l = 0.5 + (l - 0.5) * contrast;
+                l = Math.min(1, Math.max(0, l));
+                return hslToRgb(h, s, l);
+            }
+
+            function getLiveSkeletonColors() {
                 const hue = parseInt(hueSlider.value);
                 const sat = parseFloat(satSlider.value);
                 const con = parseFloat(conSlider.value);
                 return {
-                    strong: modifyColor(0,229,255, hue, sat, con),
-                    regular: modifyColor(169,255,180, hue, sat, con)
+                    strong: modifyColor(0, 229, 255, hue, sat, con),
+                    regular: modifyColor(169, 255, 180, hue, sat, con)
                 };
             }
 
-            // Slider display updates only – no live preview
-            function updateSliderDisplays(){
+            function updateSliderDisplays() {
                 document.getElementById('edge-val').innerText = edgeSlider.value;
                 document.getElementById('hue-val').innerText = hueSlider.value + '°';
                 document.getElementById('sat-val').innerText = satSlider.value;
-                document.getElementById('con-val').innerText = conSlider.value;
+                document.getElementById('con-val').innerText = parseFloat(conSlider.value).toFixed(2);
                 speedValSpan.textContent = speedSlider.value + 'x';
             }
             edgeSlider.addEventListener('input', updateSliderDisplays);
             hueSlider.addEventListener('input', updateSliderDisplays);
             satSlider.addEventListener('input', updateSliderDisplays);
             conSlider.addEventListener('input', updateSliderDisplays);
-            speedSlider.addEventListener('input', ()=>{
-                speedMultiplier = parseInt(speedSlider.value);
+            speedSlider.addEventListener('input', () => {
+                speedMultiplier = parseFloat(speedSlider.value);
                 updateSliderDisplays();
             });
             updateSliderDisplays();
 
-            // Vertical time slider
-            function updateTimeSliderRange(){
-                if(canvasHeight>0){
+            function updateTimeSliderRange() {
+                if (canvasHeight > 0) {
                     timeSlider.max = canvasHeight;
                     timeSlider.value = Math.min(timeSlider.value, canvasHeight);
                 } else {
@@ -470,24 +649,24 @@
                     timeSlider.value = 0;
                 }
             }
-            timeSlider.addEventListener('input', ()=>{
+            timeSlider.addEventListener('input', () => {
                 const val = parseInt(timeSlider.value);
-                if(isScanning){
+                if (isScanning) {
                     currentRow = val;
                     displayRow = currentRow;
-                    if(currentRow >= canvasHeight-1) currentRow = canvasHeight-2;
+                    if (currentRow >= canvasHeight - 1) currentRow = canvasHeight - 2;
                     updateHudNumbers();
                     updateScannerLinePosition();
                 } else {
                     displayRow = val;
-                    manualRowFraction = canvasHeight>0 ? val/canvasHeight : 0;
+                    manualRowFraction = canvasHeight > 0 ? val / canvasHeight : 0;
                     updateHudNumbers();
                     updateScannerLinePosition();
                 }
             });
-            timeSlider.addEventListener('dblclick', ()=>{
+            timeSlider.addEventListener('dblclick', () => {
                 manualRowFraction = null;
-                if(!isScanning && canvasHeight>0){
+                if (!isScanning && canvasHeight > 0) {
                     displayRow = 0;
                     timeSlider.value = 0;
                     updateScannerLinePosition();
@@ -495,29 +674,32 @@
                 }
             });
 
-            function updateScannerLinePosition(){
-                if(canvasHeight>0 && displayRow>=0){
-                    const rect = reconCanvas.getBoundingClientRect();
-                    scanner.style.width = rect.width + 'px';
-                    scanner.style.left = rect.left + 'px';
+            function updateScannerLinePosition() {
+                if (canvasHeight > 0 && displayRow >= 0) {
+                    const vpRect = visualPlane.getBoundingClientRect();
+                    const canvasRect = reconCanvas.getBoundingClientRect();
+                    scanner.style.width = canvasRect.width + 'px';
+                    scanner.style.left = canvasRect.left - vpRect.left + 'px';
                     const frac = displayRow / canvasHeight;
-                    scanner.style.top = (rect.top + frac * rect.height) + 'px';
-                    scanner.style.display = (isScanning || manualRowFraction!==null) ? 'block' : 'none';
+                    scanner.style.top = (canvasRect.top - vpRect.top + frac * canvasRect.height) + 'px';
+                    scanner.style.display = (isScanning || manualRowFraction !== null) ? 'block' : 'none';
+                } else {
+                    scanner.style.display = 'none';
                 }
             }
 
-            // Image loading
-            uploadBtn.onclick = ()=> fileIn.click();
-            fileIn.onchange = (e)=>{
+            uploadBtn.onclick = () => fileIn.click();
+            fileIn.onchange = (e) => {
                 const file = e.target.files[0];
-                if(!file) return;
+                if (!file) return;
                 const reader = new FileReader();
-                reader.onload = (ev)=>{
+                reader.onload = (ev) => {
                     const img = new Image();
-                    img.onload = ()=>{
-                        const maxH = window.innerHeight * 0.95;
-                        const maxW = window.innerWidth * 0.95;
-                        const scale = Math.min(maxW/img.width, maxH/img.height, 1);
+                    img.onload = () => {
+                        const vp = document.getElementById('visual-plane');
+                        const maxH = vp.clientHeight;
+                        const maxW = vp.clientWidth;
+                        const scale = Math.min(maxW / img.width, maxH / img.height, 1);
                         canvasWidth = Math.floor(img.width * scale);
                         canvasHeight = Math.floor(img.height * scale);
                         [reconCanvas, skeletonCanvas].forEach(c => { c.width = canvasWidth; c.height = canvasHeight; });
@@ -525,53 +707,58 @@
                         const offCanvas = document.createElement('canvas');
                         offCanvas.width = canvasWidth; offCanvas.height = canvasHeight;
                         const offCtx = offCanvas.getContext('2d');
-                        offCtx.drawImage(img,0,0,canvasWidth,canvasHeight);
-                        originalImageData = offCtx.getImageData(0,0,canvasWidth,canvasHeight);
+                        offCtx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
+                        originalImageData = offCtx.getImageData(0, 0, canvasWidth, canvasHeight);
                         baseImageData = new ImageData(
                             new Uint8ClampedArray(originalImageData.data),
                             canvasWidth, canvasHeight
                         );
-                        reconCtx.putImageData(baseImageData,0,0);
+                        reconCtx.putImageData(baseImageData, 0, 0);
 
-                        grayData = new Float32Array(canvasWidth*canvasHeight);
+                        grayData = new Float32Array(canvasWidth * canvasHeight);
                         const srcPixels = originalImageData.data;
-                        for(let i=0;i<srcPixels.length;i+=4){
-                            const r=srcPixels[i], g=srcPixels[i+1], b=srcPixels[i+2];
-                            grayData[i/4] = 0.299*r + 0.587*g + 0.114*b;
+                        for (let i = 0; i < srcPixels.length; i += 4) {
+                            const r = srcPixels[i], g = srcPixels[i+1], b = srcPixels[i+2];
+                            grayData[i/4] = 0.299 * r + 0.587 * g + 0.114 * b;
                         }
 
                         skeletonOutData = new ImageData(canvasWidth, canvasHeight);
-                        for(let i=0;i<skeletonOutData.data.length;i+=4) skeletonOutData.data[i+3]=0;
-                        skeletonCtx.putImageData(skeletonOutData,0,0);
+                        for (let i = 0; i < skeletonOutData.data.length; i += 4) skeletonOutData.data[i+3] = 0;
+                        skeletonCtx.putImageData(skeletonOutData, 0, 0);
 
                         totalPixels = canvasWidth * canvasHeight;
                         uploadBtn.innerText = "MATRIX LOADED";
                         startBtn.disabled = false;
                         plotRows = []; plotDensity = [];
-                        Plotly.update('density-plot', {x:[[]], y:[[]]});
+                        Plotly.update('density-plot', { x: [[]], y: [[]] });
                         currentRow = 0; totalNodes = 0; displayRow = 0;
                         manualRowFraction = null;
                         updateTimeSliderRange();
                         timeSlider.value = 0;
                         updateHudNumbers();
                         scanner.style.display = 'none';
+
+                        // Resize plots after image load
+                        setTimeout(() => {
+                            Plotly.Plots.resize(document.getElementById('density-plot'));
+                            Plotly.Plots.resize(document.getElementById('prong-plot'));
+                        }, 20);
                     };
                     img.src = ev.target.result;
                 };
                 reader.readAsDataURL(file);
             };
 
-            // Reset
-            function resetToOriginal(){
-                if(!originalImageData) return;
+            function resetToOriginal() {
+                if (!originalImageData) return;
                 baseImageData = new ImageData(new Uint8ClampedArray(originalImageData.data), canvasWidth, canvasHeight);
-                reconCtx.putImageData(baseImageData,0,0);
-                if(skeletonOutData){
-                    for(let i=0;i<skeletonOutData.data.length;i+=4) skeletonOutData.data[i+3]=0;
-                    skeletonCtx.putImageData(skeletonOutData,0,0);
+                reconCtx.putImageData(baseImageData, 0, 0);
+                if (skeletonOutData) {
+                    for (let i = 0; i < skeletonOutData.data.length; i += 4) skeletonOutData.data[i+3] = 0;
+                    skeletonCtx.putImageData(skeletonOutData, 0, 0);
                 }
                 plotRows = []; plotDensity = [];
-                Plotly.update('density-plot', {x:[[]], y:[[]]});
+                Plotly.update('density-plot', { x: [[]], y: [[]] });
                 currentRow = 0; totalNodes = 0; displayRow = 0;
                 manualRowFraction = null;
                 timeSlider.value = 0;
@@ -583,54 +770,67 @@
             }
             resetBtn.addEventListener('click', resetToOriginal);
 
-            // Composite current skeleton layer into base image
-            function compositeSkeletonToBase(){
-                if(!skeletonOutData || !baseImageData) return;
+            function saveImage() {
+                if (!baseImageData && !originalImageData) {
+                    alert('No image to save. Load an image first.');
+                    return;
+                }
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvasWidth || reconCanvas.width;
+                tempCanvas.height = canvasHeight || reconCanvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(reconCanvas, 0, 0);
+                const link = document.createElement('a');
+                link.href = tempCanvas.toDataURL('image/png');
+                link.download = 'shard-recon-' + Date.now() + '.png';
+                link.click();
+            }
+            saveBtn.addEventListener('click', saveImage);
+
+            function compositeSkeletonToBase() {
+                if (!skeletonOutData || !baseImageData) return;
                 const skData = skeletonOutData.data;
                 const baseData = baseImageData.data;
-                for(let i=0;i<skData.length;i+=4){
-                    if(skData[i+3]>0){
-                        baseData[i]=skData[i]; baseData[i+1]=skData[i+1]; baseData[i+2]=skData[i+2]; baseData[i+3]=255;
+                for (let i = 0; i < skData.length; i += 4) {
+                    if (skData[i+3] > 0) {
+                        baseData[i] = skData[i]; baseData[i+1] = skData[i+1];
+                        baseData[i+2] = skData[i+2]; baseData[i+3] = 255;
                     }
                 }
-                reconCtx.putImageData(baseImageData,0,0);
-                for(let i=0;i<skData.length;i+=4) skData[i+3]=0;
-                skeletonCtx.putImageData(skeletonOutData,0,0);
+                reconCtx.putImageData(baseImageData, 0, 0);
+                for (let i = 0; i < skData.length; i += 4) skData[i+3] = 0;
+                skeletonCtx.putImageData(skeletonOutData, 0, 0);
             }
 
-            startBtn.onclick = ()=>{
-                if(isScanning || !grayData || !baseImageData) return;
+            startBtn.onclick = () => {
+                if (isScanning || !grayData || !baseImageData) return;
                 isScanning = true;
                 startBtn.innerText = "EXTRACTING...";
                 startBtn.disabled = true;
-                currentRow = 1;
-                totalNodes = 0;
+                currentRow = 1; totalNodes = 0;
                 plotRows = []; plotDensity = [];
-                displayRow = 0;
-                manualRowFraction = null;
+                displayRow = 0; manualRowFraction = null;
                 timeSlider.value = 0;
                 scanner.style.display = 'block';
-                if(skeletonOutData){
-                    for(let i=0;i<skeletonOutData.data.length;i+=4) skeletonOutData.data[i+3]=0;
-                    skeletonCtx.putImageData(skeletonOutData,0,0);
+                if (skeletonOutData) {
+                    for (let i = 0; i < skeletonOutData.data.length; i += 4) skeletonOutData.data[i+3] = 0;
+                    skeletonCtx.putImageData(skeletonOutData, 0, 0);
                 }
                 updateScannerLinePosition();
             };
 
-            function extractionStep(){
-                if(!isScanning || currentRow >= canvasHeight-1){
-                    if(isScanning){
+            function extractionStep() {
+                if (!isScanning || currentRow >= canvasHeight - 1) {
+                    if (isScanning) {
                         compositeSkeletonToBase();
                         isScanning = false;
                         scanner.style.display = 'none';
                         startBtn.innerText = "EXTRACT BONES";
                         startBtn.disabled = false;
                         manualRowFraction = null;
-                        timeSlider.value = 0;
-                        displayRow = 0;
-                        updateHudNumbers();
-                        updateScannerLinePosition();
-                        Plotly.update('density-plot', {x:[plotRows], y:[plotDensity]});
+                        timeSlider.value = 0; displayRow = 0;
+                        updateHudNumbers(); updateScannerLinePosition();
+                        Plotly.update('density-plot', { x: [plotRows], y: [plotDensity] });
                     }
                     return;
                 }
@@ -638,26 +838,26 @@
                 const w = canvasWidth;
                 const liveThresh = parseInt(edgeSlider.value);
                 const rowsPerFrame = Math.max(1, Math.floor(speedMultiplier * PHI * 2));
-                const maxRow = Math.min(currentRow + rowsPerFrame, canvasHeight-1);
-                const colors = getLiveSkeletonColors();  // LIVE colors from sliders
+                const maxRow = Math.min(currentRow + rowsPerFrame, canvasHeight - 1);
+                const colors = getLiveSkeletonColors();
                 const sc = colors.strong, rc = colors.regular;
 
-                for(let r=currentRow; r<maxRow; r++){
+                for (let r = currentRow; r < maxRow; r++) {
                     let rowDensity = 0;
-                    const offA=(r-1)*w, offC=r*w, offB=(r+1)*w;
-                    for(let c=1; c<w-1; c++){
-                        const idx = (r*w+c)*4;
-                        const a=grayData[offA+c-1], b=grayData[offA+c], cc=grayData[offA+c+1];
-                        const d=grayData[offC+c-1], f=grayData[offC+c+1];
-                        const g=grayData[offB+c-1], h=grayData[offB+c], i=grayData[offB+c+1];
-                        const dx = (cc+2*f+i) - (a+2*d+g);
-                        const dy = (g+2*h+i) - (a+2*b+cc);
-                        const mag = Math.sqrt(dx*dx+dy*dy);
+                    const offA = (r-1)*w, offC = r*w, offB = (r+1)*w;
+                    for (let c = 1; c < w-1; c++) {
+                        const idx = (r*w + c)*4;
+                        const a = grayData[offA + c-1], b = grayData[offA + c], cc = grayData[offA + c+1];
+                        const d = grayData[offC + c-1], f = grayData[offC + c+1];
+                        const g = grayData[offB + c-1], h = grayData[offB + c], i = grayData[offB + c+1];
+                        const dx = (cc + 2*f + i) - (a + 2*d + g);
+                        const dy = (g + 2*h + i) - (a + 2*b + cc);
+                        const mag = Math.sqrt(dx*dx + dy*dy);
 
-                        if(mag > liveThresh){
+                        if (mag > liveThresh) {
                             rowDensity += mag;
                             totalNodes++;
-                            if(mag > liveThresh * 2.5){
+                            if (mag > liveThresh * 2.5) {
                                 skeletonOutData.data[idx]=sc[0]; skeletonOutData.data[idx+1]=sc[1];
                                 skeletonOutData.data[idx+2]=sc[2]; skeletonOutData.data[idx+3]=255;
                             } else {
@@ -668,31 +868,25 @@
                             skeletonOutData.data[idx+3]=0;
                         }
                     }
-                    plotRows.push(r);
-                    plotDensity.push(rowDensity);
+                    plotRows.push(r); plotDensity.push(rowDensity);
                 }
-
-                currentRow = maxRow;
-                displayRow = currentRow;
+                currentRow = maxRow; displayRow = currentRow;
                 timeSlider.value = currentRow;
-                updateHudNumbers();
-                updateScannerLinePosition();
-
-                if(maxRow % 8 === 0 || maxRow >= canvasHeight-2){
-                    Plotly.update('density-plot', {x:[plotRows], y:[plotDensity]});
+                updateHudNumbers(); updateScannerLinePosition();
+                if (maxRow % 8 === 0 || maxRow >= canvasHeight-2) {
+                    Plotly.update('density-plot', { x: [plotRows], y: [plotDensity] });
                 }
             }
 
-            function updateHudNumbers(){
+            function updateHudNumbers() {
                 document.getElementById('hud-row').innerText = displayRow;
                 document.getElementById('hud-nodes').innerText = totalNodes;
                 const mass = totalPixels>0 ? (totalNodes/totalPixels*100).toFixed(2) : '0.00';
                 document.getElementById('hud-mass').innerText = mass+'%';
             }
 
-            // Shard Recon (unchanged)
-            function shardRecon(){
-                if(!baseImageData) return;
+            function shardRecon() {
+                if (!baseImageData) return;
                 const offCanvas = document.createElement('canvas');
                 offCanvas.width=canvasWidth; offCanvas.height=canvasHeight;
                 const offCtx = offCanvas.getContext('2d');
@@ -776,7 +970,6 @@
                 }
             }
 
-            // Omni Decay
             function omniDecay(){
                 if(!baseImageData) return;
                 const offCanvas = document.createElement('canvas');
@@ -826,7 +1019,6 @@
             reconBtn.addEventListener('click', shardRecon);
             decayBtn.addEventListener('click', omniDecay);
 
-            // Prong telemetry
             function updateProngs(){
                 prongTime += 0.04;
                 const targetMass = totalPixels>0 ? totalNodes/totalPixels : 0;
@@ -851,16 +1043,16 @@
                     z: Math.sin(prongTime * PHI * PHI * densityFactor)
                 };
                 if(canvasWidth>0){
-                    const p1 = {x:(v1.x+1)/2*canvasWidth, y:(v1.y+1)/2*canvasHeight};
-                    const p2 = {x:(v2.x+1)/2*canvasWidth, y:(v2.y+1)/2*canvasHeight};
-                    const p3 = {x:(v3.x+1)/2*canvasWidth, y:(v3.y+1)/2*canvasHeight};
-                    document.getElementById('hud-v1').innerText = `${Math.round(p1.x)},${Math.round(p1.y)}`;
-                    document.getElementById('hud-v2').innerText = `${Math.round(p2.x)},${Math.round(p2.y)}`;
-                    document.getElementById('hud-v3').innerText = `${Math.round(p3.x)},${Math.round(p3.y)}`;
-                    const centroidNow = {x:(p1.x+p2.x+p3.x)/3, y:(p1.y+p2.y+p3.y)/3};
-                    const vel = {x:centroidNow.x-lastCentroid.x, y:centroidNow.y-lastCentroid.y};
-                    lastCentroid = centroidNow;
-                    document.getElementById('hud-vel').innerText = Math.sqrt(vel.x**2 + vel.y**2).toFixed(2);
+                    const p1={x:(v1.x+1)/2*canvasWidth, y:(v1.y+1)/2*canvasHeight};
+                    const p2={x:(v2.x+1)/2*canvasWidth, y:(v2.y+1)/2*canvasHeight};
+                    const p3={x:(v3.x+1)/2*canvasWidth, y:(v3.y+1)/2*canvasHeight};
+                    document.getElementById('hud-v1').innerText=`${Math.round(p1.x)},${Math.round(p1.y)}`;
+                    document.getElementById('hud-v2').innerText=`${Math.round(p2.x)},${Math.round(p2.y)}`;
+                    document.getElementById('hud-v3').innerText=`${Math.round(p3.x)},${Math.round(p3.y)}`;
+                    const centroidNow={x:(p1.x+p2.x+p3.x)/3, y:(p1.y+p2.y+p3.y)/3};
+                    const vel={x:centroidNow.x-lastCentroid.x, y:centroidNow.y-lastCentroid.y};
+                    lastCentroid=centroidNow;
+                    document.getElementById('hud-vel').innerText = Math.sqrt(vel.x**2+vel.y**2).toFixed(2);
                 }
                 function push(arr,val){ arr.push(val); if(arr.length>MAX_3D_POINTS) arr.shift(); }
                 push(prongTraces.x1,v1.x); push(prongTraces.y1,v1.y); push(prongTraces.z1,v1.z);
